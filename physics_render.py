@@ -26,7 +26,10 @@ template = ur'''% !TEX encoding=utf8
 \\usepackage{xeCJK}
 \\usepackage{varwidth}
 \\usepackage{amsmath, amssymb, yhmath}
+\\usepackage{mhchem}
 \\usepackage{graphicx}
+\\usepackage{mdwlist}
+\\usepackage{enumerate}
 \\usepackage{pifont,arcs}
 \\usepackage{ifthen,CJKnumb}
 \\usepackage[paperwidth=195mm,paperheight=270mm,left=12mm,right=14mm,top=16mm,bottom=4mm,includefoot]{geometry}'''ur'''
@@ -66,7 +69,7 @@ template = ur'''% !TEX encoding=utf8
 \newcounter{nq}
 \newcounter{nqq}[nq]
 \newcommand{\wq}{\stepcounter{nq}\thenq.\quad}
-\newcommand{\wqq}{\stepcounter{nqq}\thenqq.\quad}
+\newcommand{\wqq}{\stepcounter{nqq}(\thenqq).}
 \newcommand{\wns}{\noindent \stepcounter{ns}\CJKnumber{\thens}、}
 \newcommand{\ws}[2]{\begin{minipage}[t]{\textwidth} {\heiti \wns #1 } #2 \end{minipage} }
 \newlength{\indexlength}
@@ -231,7 +234,7 @@ def get_img(opt, img_width):
     if opt_imgs:
         for img_file in opt_imgs:
             if not os.path.isfile('{}{}'.format(img_path, img_file)):
-                img_f = open('{}{}'.format(img_path, img_file), 'w')
+                img_f = open('{}{}'.format(img_path, img_file), 'wb')
                 img_f.write(urllib2.urlopen(
                     '{}{}'.format(img_url, img_file)).read())
             opt += '\\begin{{center}}\\includegraphics[width={}\\textwidth]{{{}{}}}\\end{{center}} '.format(
@@ -243,8 +246,9 @@ def get_img(opt, img_width):
 def item_render(item_id):
     item = db.items.find_one({'_id': item_id})
     qss = ''
+#================================================选择题=======================================    
     if item['data']['type'] in [1001, 2001]:
-        desc = '%s' % item['data']['qs'][0]['desc']
+        desc = '\\fbox{\n \\begin{varwidth}{\\textwidth} \n %s' % item['data']['qs'][0]['desc']
         desc = desc.replace('[[nn]]', '\\dq ')
         opts = item['data']['qs'][0]['opts']
         opt_tex = get_opts_head(opts)
@@ -252,30 +256,64 @@ def item_render(item_id):
         for opt in opts:
             opt = get_img(opt, 0.222)
             opt_tex += '{%s}' % opt
-        opt_tex += '\\\\\r'
+        opt_tex += '\n \\end{varwidth} \n }\\\\'
+#================================================填空题=======================================   
     elif item['data']['type'] in [1002, 2002]:
-        desc = '%s' % item['data']['qs'][0]['desc']
+        desc = '\\fbox{\n \\begin{varwidth}{\\textwidth} \n %s' % item['data']['qs'][0]['desc']
         desc = desc.replace('[[nn]]', '\\dd ')
-        opt_tex = ''
-    elif item['data']['type'] in [1003, 2003, 2004, 2005]:
+        opt_tex = '\\end{varwidth} \n }\\\\'
+#================================================解答题=======================================   
+    elif item['data']['type'] in [1003, 2003, 2004, 2005]:        
         if len(item['data']['stem']) == 0:
-            desc = ur'\!\!'
+            if len(item['data']['qs']) == 1:
+                desc = u'\\fbox{\n  \\begin{varwidth}{\\textwidth} \n %s \n ' % item['data']['qs'][0]['desc']
+                desc = desc.replace('[[nn]]', '\\dd ')
+                qss += u'\\end{varwidth} \n }\\\\'
+            else:
+                desc = ''
+                qss += '\\begin{enumerate*} \n'
+                for z in range(len(item['data']['qs'])):
+                    qs = u'\\item[\\wqq] %s \n' %  item['data']['qs'][z]['desc']
+                    qs = qs.replace('[[nn]]', '\\dd ')
+                    qss += qs
+                qss += '\\end{enumerate*} \n \\end{varwidth} \n }\\\\'
         else:
-            desc = '%s' % item['data']['stem']
+            desc = u'\\fbox{\n  \\begin{varwidth}{\\textwidth} \n %s' % item['data']['stem']
+            if (len(item['data']['qs']) == 1) and (len(item['data']['qs'][0]['desc']) == 0):
+                desc = desc.replace('[[nn]]', '\\dd ')
+                qss += u'\\end{varwidth} \n }\\\\'
+#================================================没有将环境终止字段加入qss而是加入desc中 待验证结果=======                
+            else:
+                qss = '\\begin{enumerate*} \n'
+                for z in range(len(item['data']['qs'])):
+                    if len(item['data']['qs'][z]['desc']) != 0:
+                        qs = u'\\item[\\wqq] %s \n' %  item['data']['qs'][z]['desc']
+                        qs = qs.replace('[[nn]]', '\\dd ')
+                        qss += qs
+                qss += '\\end{enumerate*} \n \\end{varwidth} \n }\\\\'
         opt_tex = ''
-        for z in range(len(item['data']['qs'])):
-            if len(item['data']['qs'][z]['desc']) != 0:
-                qs = u'\\begin{subquestion} %s \\end{subquestion}\n ' % item[
-                    'data']['qs'][z]['desc']
-                qs = qs.replace('[[nn]]', '\\dd ')
-                qss += qs
+
+
+
+        # for z in range(len(item['data']['qs'])):
+        #     if len(item['data']['qs'][z]['desc']) != 0:
+        #         qs = u'\\begin{subquestion} %s \\end{subquestion}\n ' % item[
+        #             'data']['qs'][z]['desc']
+        #         qs = qs.replace('[[nn]]', '\\dd ')
+                # qss += qs
     desc = get_img(desc, 0.5)
     qss = re.sub(img_re2, u'\\ ', qss)
     desc = str2latex(desc)
     qss = str2latex(qss)
     opt_tex = str2latex(opt_tex)
-    item_tex = u'%{}\n{}\\\\\n{}\\\\\n{}'.format(
+    if len(qss) == 0:
+        item_tex = u'%{}\n{}\n\n{}'.format(
+        item_id, desc,  opt_tex)
+    else:
+        item_tex = u'%{}\n{} \n {}\n{}'.format(
         item_id, desc, qss, opt_tex)
+
+    
     return item_tex
 
 
@@ -318,18 +356,24 @@ itmtyp_2_name = {1001: '选择题',
                  2010: '综合应用题',
                  }
 
-paper_id = ObjectId("57077e4cbbddbd37777b4c8a")
+paper_id = ObjectId("570f3c93e694aa11865683ff")
 paper = db.papers.find_one({'_id': paper_id})
 paper_path = '../papers/'
 item_path = '../items/'
 img_path = '../imgs/'
 img_re2 = re.compile(ur'\[\[img\]\].*?\[\[/img\]\]')
 img_file_re = re.compile(ur'\w+\.(?:png|jpg|gif|bmp)')
+
+if os.path.exists(img_path):
+    pass
+else:
+    os.makedirs(img_path)
 if os.path.exists(paper_path):
     pass
 else:
     os.makedirs(paper_path)
 
-f = open('{path}{name}.tex'.format(path=paper_path, name=paper['name']), 'w')
+
+f = open(u'{path}{name}.tex'.format(path=paper_path, name=paper['name']), 'w')
 f.write(physics_paper_render(paper))
 f.close()
