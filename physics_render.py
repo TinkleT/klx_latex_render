@@ -16,10 +16,6 @@ import urllib2
 from bson.objectid import ObjectId
 from pymongo import MongoClient
 
-client = MongoClient('10.0.0.100', 27017)
-dbname = 'klx_ph'
-db = client[dbname]
-
 template = ur'''% !TEX encoding=utf8
 % !TEX program=xelatex
 \documentclass{article}'''u'''
@@ -34,43 +30,72 @@ template = ur'''% !TEX encoding=utf8
 \\usepackage{ifthen,CJKnumb}
 \\usepackage[paperwidth=195mm,paperheight=270mm,left=12mm,right=14mm,top=16mm,bottom=4mm,includefoot]{geometry}'''ur'''
 %%\setCJKmainfont{SimSun}
-\linespread{1.5}
+\linespread{1.3}
 \setlength{\fboxsep}{0pt}
 \setlength{\fboxrule}{0.4pt}
 \newcommand{\dq}{\mbox{(\qquad)}}
 \newcommand{\dd}{\mbox{\rule[-.2ex]{4em}{.5pt}}}
 \newcommand{\fourch}[4]
-{\begin{tabular}{*{4} {@{} p{0.25\textwidth}}} A. #1 & B. #2 & C. #3 & D. #4 \end{tabular}}
+{\newline \begin{tabular}{*{4} {@{} p{0.25\textwidth}}} A. #1 & B. #2 & C. #3 & D. #4 \end{tabular}}
 \newcommand{\twoch}[4]
-{\begin{tabular}{*{2} {@{} p{0.5\textwidth}}} A. #1 & B. #2\\ \end{tabular}
+{\newline \begin{tabular}{*{2} {@{} p{0.5\textwidth}}} A. #1 & B. #2\\ \end{tabular}
 \begin{tabular}{*{2} {@{} p{0.5\textwidth}}}C. #3 & D. #4 \end{tabular}}
-\newcommand{\onech}[4]{ A. #1 \\ B. #2 \\ C. #3 \\ D. #4}
-\newcommand{\imgch}[4]
-{\begin{tabular}{cccc}  \fbox{#1} &  \fbox{#2} & \fbox{#3} &  \fbox{#4} \\ A & B & C & D \end{tabular}}
+\newcommand{\onech}[4]{\newline  A. #1 \\ B. #2 \\ C. #3 \\ D. #4}
+%\newcommand{\imgch}[4]{
+%\newline \begin{tabular}{cccc}  \fbox{#1} &  \fbox{#2} & \fbox{#3} &  \fbox{#4} \\ A & B & C & D \end{tabular}}
 \newlength{\cha}
 \newlength{\chb}
 \newlength{\chc}
 \newlength{\chd}
 \newlength{\maxw}
+\newcommand{\imgch}[8]{
+    \settowidth{\cha}{#1}
+    \settowidth{\chb}{#3}
+    \settowidth{\chc}{#5}
+    \settowidth{\chd}{#7}
+    \addtolength{\cha}{\chb}
+    \addtolength{\cha}{\chd}
+    \addtolength{\cha}{\chc}
+    \ifthenelse{\lengthtest{\cha = 0mm}}
+    {%then no text in img_opts
+    \newline 
+    \begin{tabular}{cccc}  
+    \fbox{#2} &  \fbox{#4} & \fbox{#6} &  \fbox{#8} \\
+    A & B & C & D 
+    \end{tabular}
+    }
+    {%else some text in img_opts
+    \newline 
+    \begin{tabular}{*{4} {@{} p{0.24\textwidth}}c}
+    \centering #2 & \centering #4 & \centering #6 & \centering #8 &\\
+    \parbox{0.23\textwidth}{ \centering #1} & \parbox{0.23\textwidth}{\centering #3} & \parbox{0.23\textwidth}{\centering #5} &  \parbox{0.23\textwidth}{\centering #7} & \\
+    \centering A & \centering B & \centering C & \centering D   &\\
+    \end{tabular}
+    }
+    }
 \setlength{\parindent}{0em}
-\newcommand{\ch}[4]
-{
-\settowidth{\cha}{A. #1}
-\settowidth{\chb}{B. #2}
-\settowidth{\chc}{C. #3}
-\settowidth{\chd}{D. #4}\setlength{\maxw}{\cha}
-\ifthenelse{\lengthtest{\chb > \maxw}}{\setlength{\maxw}{\chb}}{}
-\ifthenelse{\lengthtest{\chc > \maxw}}{\setlength{\maxw}{\chc}}{}
-\ifthenelse{\lengthtest{\chd > \maxw}}{\setlength{\maxw}{\chd}}{}
-\ifthenelse{\lengthtest{\maxw > 0.48\textwidth}}
-{\onech{#1}{#2}{#3}{#4}}
-{\ifthenelse{\lengthtest{\maxw >0.24\textwidth}}{\twoch{#1}{#2}{#3}{#4}}{\fourch{#1}{#2}{#3}{#4}}}}
+\setlength{\parskip}{1em}
+\newcommand{\ch}[8]{
+    \settowidth{\cha}{A. #1}
+    \settowidth{\chb}{B. #2}
+    \settowidth{\chc}{C. #3}
+    \settowidth{\chd}{D. #4}\setlength{\maxw}{\cha}
+    \ifthenelse{\lengthtest{\chb > \maxw}}{\setlength{\maxw}{\chb}}{}
+    \ifthenelse{\lengthtest{\chc > \maxw}}{\setlength{\maxw}{\chc}}{}
+    \ifthenelse{\lengthtest{\chd > \maxw}}{\setlength{\maxw}{\chd}}{}
+    \ifthenelse{\lengthtest{\maxw > 0.48\textwidth}}
+    {\onech{#1}{#3}{#5}{#7}}
+    {\ifthenelse{\lengthtest{\maxw >0.24\textwidth}}{\twoch{#1}{#3}{#5}{#7}}{\fourch{#1}{#3}{#5}{#7}}}}
 \newcounter{ns}
 \newcounter{nq}
 \newcounter{nqq}[nq]
-\newcommand{\wq}{\stepcounter{nq}\thenq.\quad}
-\newcommand{\wqq}{\stepcounter{nqq}(\thenqq).}
-\newcommand{\wns}{\noindent \stepcounter{ns}\CJKnumber{\thens}、}
+\newcounter{nqqq}[nqq]
+\newcommand{\wq}{
+    \stepcounter{nq}
+    \thenq.\hspace{.6em}}
+\newcommand{\wqq}{\stepcounter{nqq}\item[(\thenqq)]}
+\newcommand{\wqqq}{\stepcounter{nqqq}\item[(\roman{nqqq})]}
+\newcommand{\wns}{\stepcounter{ns}\CJKnumber{\thens}、}
 \newcommand{\ws}[2]{\begin{minipage}[t]{\textwidth} {\heiti \wns #1 } #2 \end{minipage} }
 \newlength{\indexlength}
 \newlength{\contentlength}
@@ -81,15 +106,12 @@ template = ur'''% !TEX encoding=utf8
 \addtolength{\contentlength}{-1em}
 \addtolength{\subcontentlength}{-3em}
 \newenvironment{question}{%
-\begin{minipage}[t]{\indexlength}\wq\end{minipage}\begin{minipage}[t]{\contentlength}
-}{%
-\end{minipage}\\
-}
-\newenvironment{subquestion}{%
-\begin{minipage}[t]{\indexlength}\wqq\end{minipage}\begin{minipage}[t]{\subcontentlength}
-}{%
-\end{minipage}\\ \\
-}
+    \begin{minipage}[t]{\indexlength}\wq\end{minipage}\begin{minipage}[t]{\contentlength}
+    }{%
+    \end{minipage}\par
+    }
+\newenvironment{subquestions}{\begin{enumerate*}}{\end{enumerate*}}
+\newenvironment{subsubquestions}{\begin{enumerate*}}{\end{enumerate*}}
 \renewcommand{\cong}{\text{\raisebox{-0.2em}{\includegraphics[height=1em]{../imgs/U+224C.pdf}}}}
 \renewcommand{\parallel}{\text{\raisebox{-0.2em}{\includegraphics[height=1em]{../imgs/U+2225.pdf}}}}
 \begin{document}
@@ -97,43 +119,100 @@ template = ur'''% !TEX encoding=utf8
 
 
 def str2latex(ori):
-    def array_in_mathmode(s):  # by ningshuo
-        def _deal(s, math_end):
-            stop = s.find(ur'\)')
-            print stop
+    def array_mathmode(s):
+        def _array_math_display(s):
+            s = re.sub(
+                ur'\\begin\s?{array}[\s\S]*?\\end\s?{array}', lambda x: ur'\[%s\]' % x.group(), s)
+            return s
+
+        def _dealdisplay(s):
+            stop = s.find(ur'\]')
             if stop == -1:
-                s = re.sub(ur'\\begin\s?{array}', ur'\[\\begin{array}', s)
-                s = re.sub(ur'\\end\s?{array}', ur'\\end{array}\]', s)
+                s = _array_math_display(s)
             else:
-                s = s[
-                    :stop] + re.sub(ur'\\begin\s?{array}', ur'\[\\begin{array}', s[stop:])
+                math = s[:stop]
+                text = s[stop:]
+                text = _array_math_display(text)
+                s = math + text
+            return s
+
+        def _dealinline(s):
+            stop = s.find(ur'\)')
+            if stop == -1:
+                s = re.split(ur'(?<!\\)\\\[', s)
+                for idx, str in enumerate(s, start=0):
+                    s[idx] = _dealdisplay(str)
+                s = ur'\['.join(s)
+            else:
+                math = s[:stop]
+                k = s[stop:]
+                k = re.split(ur'(?<!\\)\\\[', k)
+                for idx, str in enumerate(k, start=0):
+                    k[idx] = _dealdisplay(str)
+                k = ur'\['.join(k)
+                s = math + k
             return s
 
         s = re.split(ur'(?<!\\)\\\(', s)
-        show_pretty_dict(s)
         for idx, str in enumerate(s, start=0):
-            s[idx] = _deal(str, ur'(?<!\\)\\\)')
+            s[idx] = _dealinline(str)
         s = ur'\('.join(s)
         return s
 
-    def cn_in_mathmode(s):  # by ningshuo
-        def _deal(s, math_end):
-            stop = s.find(math_end)
-            assert stop != -1
-            return re.sub(ur'[\u4e00-\u9fa5]+',
-                          lambda x: ur'\text{%s}' % x.group(), s[:stop]) + s[stop:]
 
-        math_mode_delimiter = [
-            (ur'\(', ur'\)'),
-            (ur'\[', ur'\]'),
-        ]
-        for math_begin, math_end in math_mode_delimiter:
-            s = re.split(ur'(?<!\\)\\%s' % math_begin, s)
-            for idx, str in enumerate(s[1:], start=1):
-                s[idx] = _deal(str, math_end)
-            s = math_begin.join(s)
+    def cn_in_mathmode(s):  # by ningshuo
+
+        def _deal_mathmode(s):
+            s = re.sub(ur'[\u4e00-\u9fa5]+',
+                       lambda x: ur'\text{%s}' % x.group(), s)
+            return s
+
+        def _deal_textmode(s):
+
+            s = s.replace(u'\n', u'\\\\\n')
+
+            return s
+
+        def _dealdisplay(s):
+            stop = s.find(ur'\]')
+            if stop == -1:
+                s = _deal_textmode(s)
+            else:
+                math = s[:stop]
+                math = _deal_mathmode(math)
+                text = s[stop:]
+                text = _deal_textmode(text)
+                s = math + text
+            return s
+
+        def _dealinline(s):
+            stop = s.find(ur'\)')
+            if stop == -1:
+                s = re.split(ur'(?<!\\)\\\[', s)
+                for idx, str in enumerate(s, start=0):
+                    s[idx] = _dealdisplay(str)
+                s = ur'\['.join(s)
+            else:
+                math = s[:stop]
+                math = _deal_mathmode(math)
+                k = s[stop:]
+                k = re.split(ur'(?<!\\)\\\[', k)
+                for idx, str in enumerate(k, start=0):
+                    k[idx] = _dealdisplay(str)
+                k = ur'\['.join(k)
+                s = math + k
+            return s
+
+        s = array_mathmode(s)
+        s = re.split(ur'(?<!\\)\\\(', s)
+        for idx, str in enumerate(s, start=0):
+            s[idx] = _dealinline(str)
+        s = ur'\('.join(s)
+        s = s.replace(u'\\\\\n\[', u'\n\[')
+        s = s.replace(u'\]\\\\\n', u'\]\n')
         return s
 
+#==================================================================
     def array_col_correction(x):
         x.group(0).split('\\\\')[0]
         col_num = len(re.findall(ur'(?<!\\)&', x.group(0).split('\\\\')[0]
@@ -180,13 +259,19 @@ def str2latex(ori):
             (ur'{split}', ur'{aligned}'),
             (ur'\uff1d', ur'='),
             (ur'\Omega', ur'\text{$\Omega$}'),
-            (ur'\style{font-family:Times New Roman}{g}', ur'\textsl{g}')
+            (ur'\style{font-family:Times New Roman}{g}', ur'\textsl{g}'),
+            (ur'\uFF1E', ur'>'),
+            (ur'\uFF1C', ur'<'),
+            (ur'\u00A0', ur' '),
+            (ur'\uFF0B', ur'+')
         ]
         for uni, latex in unicode2latex:
             s = s.replace(uni, latex)
         return s
+
     ori = unicode_2_latex(ori)
     ori = re.sub(ur'(?<!\\)%', '\%', ori)
+    ori = array_mathmode(ori)
     ori = cn_in_mathmode(ori)
     ori = re.sub(
         ur'\\begin\s?{array}[\s\S]*?\\end\s?{array}', array_col_correction, ori)
@@ -228,93 +313,83 @@ def get_opts_head(opts):
         return '\\ch'
 
 
-def get_img(opt, img_width):
+def get_opt_img(opt, img_width):
     opt = punc_in_img(opt)
     opt_imgs = re.findall(img_file_re, opt)
+    opt_img = ''
     if opt_imgs:
         for img_file in opt_imgs:
             if not os.path.isfile('{}{}'.format(img_path, img_file)):
-                img_f = open('{}{}'.format(img_path, img_file), 'wb')
+                img_f = open('{}{}'.format(img_path, img_file), 'w')
                 img_f.write(urllib2.urlopen(
                     '{}{}'.format(img_url, img_file)).read())
-            opt += '\\begin{{center}}\\includegraphics[width={}\\textwidth]{{{}{}}}\\end{{center}} '.format(
+            opt_img = '\\includegraphics[width={}\\textwidth]{{{}{}}}'.format(
                 img_width, img_path, img_file)
-    opt = re.sub(img_re2, '', opt)
-    return opt
+    opt = re.sub(img_re3, '', opt)
+    opt = re.sub(ur'\n', '', opt)
+    return [opt, opt_img]
 
 
-def item_render(item_id):
-    item = db.items.find_one({'_id': item_id})
-    qss = ''
-#================================================选择题=======================================    
-    if item['data']['type'] in [1001, 2001]:
-        desc = '\\fbox{\n \\begin{varwidth}{\\textwidth} \n %s' % item['data']['qs'][0]['desc']
-        desc = desc.replace('[[nn]]', '\\dq ')
+def item_latex_render(item_id):
+    tex = '%% {} \n '.format(item_id)
+    tex += '\\fbox{\n \\begin{varwidth}{\\textwidth} \\begin{question}\n'
+    item = db.item.find_one({'_id': item_id})
+#================================================选择题======================================    
+    if item['data']['type'] in [1001, 2001,4001]:
+        tex += '%s \n' % str2latex(item['data']['qs'][0]['desc'].replace('[[nn]]', '\\dq '))
         opts = item['data']['qs'][0]['opts']
         opt_tex = get_opts_head(opts)
-
         for opt in opts:
-            opt = get_img(opt, 0.222)
-            opt_tex += '{%s}' % opt
-        opt_tex += '\n \\end{varwidth} \n }\\\\'
-#================================================填空题=======================================   
+            opt = get_opt_img(opt, 0.222)
+            opt_tex += '{%s}{%s}' % (str2latex(opt[0]),str2latex(opt[1]))
+        tex += opt_tex
+#================================================填空题======================================   
     elif item['data']['type'] in [1002, 2002]:
-        desc = '\\fbox{\n \\begin{varwidth}{\\textwidth} \n %s' % item['data']['qs'][0]['desc']
-        desc = desc.replace('[[nn]]', '\\dd ')
-        opt_tex = '\\end{varwidth} \n }\\\\'
-#================================================解答题=======================================   
-    elif item['data']['type'] in [1003, 2003, 2004, 2005]:        
+        tex += '%s \n' % str2latex(item['data']['qs'][0]['desc'].replace('[[nn]]', '\\dd '))
+#================================================解答题======================================   
+    elif item['data']['type'] in [1003, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 0]:        
         if len(item['data']['stem']) == 0:
             if len(item['data']['qs']) == 1:
-                desc = u'\\fbox{\n  \\begin{varwidth}{\\textwidth} \n %s \n ' % item['data']['qs'][0]['desc']
-                desc = desc.replace('[[nn]]', '\\dd ')
-                qss += u'\\end{varwidth} \n }\\\\'
+                tex += u'%s \n ' % str2latex(item['data']['qs'][0]['desc'].replace('[[nn]]', '\\dd '))
             else:
-                desc = ''
-                qss += '\\begin{enumerate*} \n'
+                tex += u'\\begin{subquestions} \n' 
                 for z in range(len(item['data']['qs'])):
-                    qs = u'\\item[\\wqq] %s \n' %  item['data']['qs'][z]['desc']
-                    qs = qs.replace('[[nn]]', '\\dd ')
-                    qss += qs
-                qss += '\\end{enumerate*} \n \\end{varwidth} \n }\\\\'
+                    tex += u'\\wqq %s \n' %  str2latex(item['data']['qs'][z]['desc'].replace('[[nn]]', '\\dd '))
+                    if 'qs' in item['data']['qs'][z]:
+                        tex += u'\\begin{subsubquestions} \n'
+                        for qs_qs in item['data']['qs'][z]['qs']:
+                            tex += u'\wqqq {} \n'.format(str2latex(qs_qs['desc'].replace('[[nn]]', '\\dd ')))
+                        tex += u'\\end{subsubquestions} \n'
+                tex += '\\end{subquestions} \n '
         else:
-            desc = u'\\fbox{\n  \\begin{varwidth}{\\textwidth} \n %s' % item['data']['stem']
+            tex += u'%s \n' % str2latex(item['data']['stem'].replace('[[nn]]', '\\dd '))
             if (len(item['data']['qs']) == 1) and (len(item['data']['qs'][0]['desc']) == 0):
-                desc = desc.replace('[[nn]]', '\\dd ')
-                qss += u'\\end{varwidth} \n }\\\\'
-#================================================没有将环境终止字段加入qss而是加入desc中 待验证结果=======                
+                tex += u'\n'
             else:
-                qss = '\\begin{enumerate*} \n'
+                tex += '\\begin{subquestions} \n'
                 for z in range(len(item['data']['qs'])):
                     if len(item['data']['qs'][z]['desc']) != 0:
-                        qs = u'\\item[\\wqq] %s \n' %  item['data']['qs'][z]['desc']
-                        qs = qs.replace('[[nn]]', '\\dd ')
-                        qss += qs
-                qss += '\\end{enumerate*} \n \\end{varwidth} \n }\\\\'
-        opt_tex = ''
+                        tex += u'\\wqq %s \n' %  str2latex(item['data']['qs'][z]['desc'].replace('[[nn]]', '\\dd '))     
+                        if 'qs' in item['data']['qs'][z]:
+                            tex += u'\\begin{subsubquestions} \n'
+                            for qs_qs in item['data']['qs'][z]['qs']:
+                                tex += u'\wqqq {} \n'.format(str2latex(qs_qs['desc'].replace('[[nn]]', '\\dd ')))
+                            tex += u'\\end{subsubquestions} \n'
+                tex += '\\end{subquestions} \n'
 
+    tex += u'\\end{question} \n \\end{varwidth} \n }\\\\'
+    # desc = get_img(desc, 0.5)
+    # qss = re.sub(img_re2, '', qss)
+    tex = re.sub(img_re2, '', tex)
 
-
-        # for z in range(len(item['data']['qs'])):
-        #     if len(item['data']['qs'][z]['desc']) != 0:
-        #         qs = u'\\begin{subquestion} %s \\end{subquestion}\n ' % item[
-        #             'data']['qs'][z]['desc']
-        #         qs = qs.replace('[[nn]]', '\\dd ')
-                # qss += qs
-    desc = get_img(desc, 0.5)
-    qss = re.sub(img_re2, u'\\ ', qss)
-    desc = str2latex(desc)
-    qss = str2latex(qss)
-    opt_tex = str2latex(opt_tex)
-    if len(qss) == 0:
-        item_tex = u'%{}\n{}\n\n{}'.format(
-        item_id, desc,  opt_tex)
-    else:
-        item_tex = u'%{}\n{} \n {}\n{}'.format(
-        item_id, desc, qss, opt_tex)
-
-    
-    return item_tex
+    # if len(qss) == 0:
+    #     item_tex = u'%{}\n{}\n\n{}'.format(
+    #     item_id, desc,  opt_tex)
+    # else:
+    #     item_tex = u'%{}\n{} \n {}\n{}'.format(
+    #     item_id, desc, qss, opt_tex)
+    # item_tex = item_tex.replace(u'\n\n', u'\n')
+    return tex
 
 
 def physics_paper_render(paper):
@@ -338,6 +413,11 @@ def physics_paper_render(paper):
 """ 
 === Setting =============================================================
 """
+
+client = MongoClient('10.0.0.168', 27017)
+dbname = 'chemistry'
+db = client[dbname]
+
 pdf_width = u'\\textwidth'
 img_url = 'http://www.kuailexue.com/data/img/'
 
@@ -356,24 +436,48 @@ itmtyp_2_name = {1001: '选择题',
                  2010: '综合应用题',
                  }
 
-paper_id = ObjectId("570f3c93e694aa11865683ff")
+paper_id = ObjectId("572abb4bbbddbd4d2dbd89dc")
 paper = db.papers.find_one({'_id': paper_id})
 paper_path = '../papers/'
 item_path = '../items/'
 img_path = '../imgs/'
-img_re2 = re.compile(ur'\[\[img\]\].*?\[\[/img\]\]')
+img_re2 = re.compile(ur'\n?\[\[img\]\].*?\[\[/img\]\]')
+img_re3 = re.compile(ur'\[\[img\]\].*?\[\[/img\]\]')
 img_file_re = re.compile(ur'\w+\.(?:png|jpg|gif|bmp)')
 
-if os.path.exists(img_path):
-    pass
-else:
-    os.makedirs(img_path)
-if os.path.exists(paper_path):
-    pass
-else:
-    os.makedirs(paper_path)
+for path in [paper_path, item_path, img_path]:
+    if os.path.exists(path):
+        pass
+    else:
+        os.makedirs(path)
+#=====================================单题测试=======================
+def do_items(items, subject):
+    tex = template
+    dbname = subject
+    for item in items:
+        print item['_id']
+        tex += item_latex_render(item['_id'])
+    tex += u'\\end{document}'
+    return tex
+
+skip = 4540
+limit = 20
+items = list(db.item.find({'status': {'$in': [40, 50, 60, 70]}}).skip(skip).limit(limit))
+subject = 'physics'
+path = paper_path
+f = open('{}.tex'.format(skip), 'w')
+f.write(do_items(items, subject))
+f.close
+
+print skip
 
 
-f = open(u'{path}{name}.tex'.format(path=paper_path, name=paper['name']), 'w')
-f.write(physics_paper_render(paper))
-f.close()
+item_ids = [
+    '562739ec5417d174cb1a3de5',
+    '560b8cd15417d174cc8280a4',
+]
+
+# f = open('{path}{name}.tex'.format(path=paper_path, name=paper_id), 'w')
+
+
+
