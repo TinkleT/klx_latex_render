@@ -50,7 +50,7 @@ template = ur'''% !TEX encoding=utf8
 \newlength{\maxw}
 \newcommand{\imgch}[8]{
     \settowidth{\cha}{#1}
-    \settowidth{\chb}{#3}sd
+    \settowidth{\chb}{#3}
     \settowidth{\chc}{#5}
     \settowidth{\chd}{#7}
     \addtolength{\cha}{\chb}
